@@ -2,6 +2,7 @@
 Vitoga George Patrick, patrionpatrick@gmail.com
 """
 import pandas as pd
+import operator
 
 def process_shifts(path_to_csv):
     data = pd.read_csv(path_to_csv)
@@ -13,6 +14,30 @@ def process_shifts(path_to_csv):
         productivity = update_productivity(productivity, start_shift, end_shift, start_break, end_break, pay_rate)
     productivity = {map_hour_to_key(k):int(v) for (k,v) in productivity.items()}
     return productivity
+
+
+def process_sales(path_to_csv):
+    data = pd.read_csv(path_to_csv)
+    productivity = {x:0 for x in range(0, 24)}
+    for _, row in data.iterrows():
+        time,_ = format_hour_interval(row["time"]+"- 00:00")
+        productivity[time]+= row["amount"]
+    productivity = {map_hour_to_key(k):v for (k,v) in productivity.items()}
+    return productivity
+
+def compute_percentage(shifts, sales):
+    productivity = {map_hour_to_key(x):0 for x in range(0, 24)}
+    for hour in sales.keys():
+        if sales[hour] == 0:
+            productivity[hour] = -shifts[hour]
+        else:
+            productivity[hour] = 100 * shifts[hour]/sales[hour]
+    return productivity
+
+def best_and_worst_hour(percentages):
+    best_hour = max(percentages.items(), key=operator.itemgetter(1))[0]
+    worst_hour = min(percentages.items(), key=operator.itemgetter(1))[0]
+    return [best_hour,worst_hour]
 
 
 def format_hour_interval(hour):
@@ -33,7 +58,6 @@ def format_hour_interval(hour):
     if start_break == end_break:
         end_break+=1
     return start_break,end_break
-
 
 def convert_AmPm_hour_to_europe(hour):
     time = ""
@@ -74,61 +98,6 @@ def map_hour_to_key(k):
         k = '0'+ k
     return k+':00'
         
-
-def process_sales(path_to_csv):
-    """
-
-    :param path_to_csv: The path to the transactions.csv
-    :type string:
-    :return: A dictionary with time (string) with format %H:%M as key and
-    sales as value (string),
-    and corresponding value with format %H:%M (e.g. "18:00"),
-    and type float)
-    For example, it should be something like :
-    {
-        "17:00": 250,
-        "22:00": 0,
-    },
-    This means, for the hour beginning at 17:00, the sales were 250 dollars
-    and for the hour beginning at 22:00, the sales were 0.
-
-    :rtype dict:
-    """
-    return
-
-def compute_percentage(shifts, sales):
-    """
-
-    :param shifts:
-    :type shifts: dict
-    :param sales:
-    :type sales: dict
-    :return: A dictionary with time as key (string) with format %H:%M and
-    percentage of labour cost per sales as value (float),
-    If the sales are null, then return -cost instead of percentage
-    For example, it should be something like :
-    {
-        "17:00": 20,
-        "22:00": -40,
-    }
-    :rtype: dict
-    """
-    return
-
-def best_and_worst_hour(percentages):
-    """
-
-    Args:
-    percentages: output of compute_percentage
-    Return: list of strings, the first element should be the best hour,
-    the second (and last) element should be the worst hour. Hour are
-    represented by string with format %H:%M
-    e.g. ["18:00", "20:00"]
-
-    """
-
-    return
-
 def main(path_to_shifts, path_to_sales):
     """
     Do not touch this function, but you can look at it, to have an idea of
@@ -145,8 +114,7 @@ if __name__ == '__main__':
     # You can change this to test your code, it will not be used
     path_to_sales = "transactions.csv"
     path_to_shifts = "work_shifts.csv"
-    print(process_shifts(path_to_shifts))
-    # best_hour, worst_hour = main(path_to_shifts, path_to_sales)
+    best_hour, worst_hour = main(path_to_shifts, path_to_sales)
 
 
 # Vitoga George Patrick, patrionpatrick@gmail.com
